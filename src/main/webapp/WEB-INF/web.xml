@@ -29,4 +29,10 @@
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
 
+    <listener>
+      <listener-class>
+        cljinject.SwankServletContextListener
+      </listener-class>
+    </listener>
+
 </web-app>
