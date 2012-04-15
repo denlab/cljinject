@@ -137,7 +137,7 @@ nil
 
 * Connect from Emacs
 
-*Note*: You may need to install =slime-rep=.
+*Note*: You may need to install =slime-repl=.
 
 - In emacs: =M-x slime-connect=
 
