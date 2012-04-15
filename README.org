@@ -73,12 +73,12 @@ Create the class:
 
 #+begin_src java
 package cljinject;
-
+ 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import clojure.lang.Compiler;
-import java.io.StringReader;
+import clojure.lang.Compiler; 
+import java.io.StringReader; 
 
 public class SwankServletContextListener implements ServletContextListener{
 
@@ -86,27 +86,30 @@ public class SwankServletContextListener implements ServletContextListener{
     public static ServletContext context;
 
     public void contextInitialized(ServletContextEvent contextEvent) {
+        System.out.println(">>>>>>>>>>>>>>> Context Created");
         context = contextEvent.getServletContext();
+        // set variable to servlet context
+        context.setAttribute("TEST", "TEST_VALUE");
+        
+        System.out.println(">>>>>>>>>>>>>>> now waiting ... ;)");
 
-        final String startSwankScript =
-        "(ns my-app\n" +
-        "  (:use [swank.swank :as swank]))\n" +
-        "(swank/start-repl) ";
-
-        // launch swank in a separate thread otherwise it will 
-        // block the webapp startup
         new Thread() {
             public void run() {
                 try {
-                    Compiler.load(new StringReader(startSwankScript));
+                    final String startSwankScript = 
+                        "(ns my-app\n" + 
+                        "  (:use [swank.swank :as swank]))\n" + 
+                        "(swank/start-repl) "; 
+                    Compiler.load(new StringReader(startSwankScript)); 
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
         }.start();
     }
-
     public void contextDestroyed(ServletContextEvent contextEvent) {
+        context = contextEvent.getServletContext();
+        System.out.println(">>>>>>>>>>>>>>>> Context Destroyed");
     }
 }
 #+end_src
@@ -131,8 +134,15 @@ In =web.xml=:
 
 Now in the Jetty logs you should see: 
 #+begin_src sh
+2012-04-15 22:05:23.845:INFO::No Transaction manager found - if your webapp requires one, please configure one.
+>>>>>>>>>>>>>>> Context Created
+>>>>>>>>>>>>>>> now waiting ... ;)
+2012-04-15 22:05:25.016:INFO::Started SelectChannelConnector@0.0.0.0:8080
+[INFO] Started Jetty Server
+[INFO] Starting scanner at interval of 10 seconds.
 my-app=> Connection opened on null port 4005.
 nil
+
 #+end_src
 
 * Connect from Emacs
