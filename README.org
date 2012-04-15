@@ -1,0 +1,173 @@
+Injecting a Clojure REPL into your Existing Java Web app
+
+* What? 
+
+- You develop an existing Java Web app
+
+- You would like to tinker with it using Clojure
+
+- And to connect to it from Emacs to mess around the live Web app
+
+Let's do that!
+
+* The existing Java Web app
+
+For this example, must be Mavenized, must have the Jetty plugin.
+
+This maven archetype has that: 
+#+begin_src sh
+mvn archetype:generate \
+-DarchetypeGroupId=org.cometd.archetypes \
+-DarchetypeArtifactId=cometd-archetype-jquery-jetty6 \
+-DgroupId=cljinject \
+-DartifactId=cljinject
+#+end_src
+
+Check it's running correctly with:
+#+begin_src sh
+cd cljinject
+mvn jetty:run
+#+end_src
+
+You should have something on http://localhost:8080/cljinject
+
+* Add the clojars repository
+
+Clojars is where all the Clojure goodies lives.
+
+Add to your =pom.xml=: 
+#+begin_src xml
+    <version>1.0-SNAPSHOT</version>
+    <!-- =====<clojars>===== -->
+    <repositories>
+      <repository>
+        <id>clojars.org</id>
+        <url>http://clojars.org/repo</url>
+      </repository>
+    </repositories>
+    <!-- =====</clojars>===== -->
+    <build>
+#+end_src
+
+* Add the swank-clojure dependency
+
+This will allow to start a swank server from within the Web app.
+
+Add to your =pom.xml=: 
+#+begin_src xml
+        </dependency>
+        <!-- =====<swank-clojure>===== -->
+        <dependency>
+          <groupId>swank-clojure</groupId>
+          <artifactId>swank-clojure</artifactId>
+          <version>1.4.2</version>
+        </dependency>
+        <!-- =====</swank-clojure>===== -->
+     </dependencies>
+#+end_src
+
+* Create the ServletContextListener that will launch Swank
+
+Create the class:
+=./src/main/java/cljinject/SwankServletContextListener.java=: 
+
+#+begin_src java
+package cljinject;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import clojure.lang.Compiler;
+import java.io.StringReader;
+
+public class SwankServletContextListener implements ServletContextListener{
+
+    // keep a hand on the context so we can get it from within clojure
+    public static ServletContext context;
+
+    public void contextInitialized(ServletContextEvent contextEvent) {
+        context = contextEvent.getServletContext();
+
+        final String startSwankScript =
+        "(ns my-app\n" +
+        "  (:use [swank.swank :as swank]))\n" +
+        "(swank/start-repl) ";
+
+        // launch swank in a separate thread otherwise it will 
+        // block the webapp startup
+        new Thread() {
+            public void run() {
+                try {
+                    Compiler.load(new StringReader(startSwankScript));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }.start();
+    }
+
+    public void contextDestroyed(ServletContextEvent contextEvent) {
+    }
+}
+#+end_src
+
+* Declare the ServletContextListener
+
+In =web.xml=:
+#+begin_src xml
+        <url-pattern>/cometd/*</url-pattern>
+    </filter-mapping>
+    <!-- =====<swank-listener>===== -->
+    <listener>
+      <listener-class>
+        cljinject.SwankServletContextListener
+      </listener-class>
+    </listener>
+    <!-- =====<swank-listener>===== -->
+ </web-app>
+#+end_src
+
+* Launch the webapp
+
+Now in the Jetty logs you should see: 
+#+begin_src sh
+my-app=> Connection opened on null port 4005.
+nil
+#+end_src
+
+* Connect from Emacs
+
+*Note*: You may need to install =slime-rep=.
+
+- In emacs: =M-x slime-connect=
+
+- Now in the slime REPL type: 
+#+begin_src clojure
+user> (.println System/out "---- hello from clojure!!! -----")
+nil
+#+end_src
+
+- You should see it on the Jetty console: 
+#+begin_src sh
+---- hello from clojure!!! -----
+#+end_src
+
+* Mess around ;-)
+
+We took care to expose the context in the
+=SwankServletContextListener=, so now we can access it from the REPL
+and mess around: 
+
+#+begin_src clojure
+user> cljinject.SwankServletContextListener/context
+#<SContext ServletContext@178820c{/cljinject,file:<snip>}>
+#+end_src
+
+* That's it!
+
+Isn't life beautiful?
+
+* References
+- https://github.com/technomancy/swank-clojure
+- http://stackoverflow.com/questions/2661025/embedding-swank-clojure-in-java-program
+- http://stackoverflow.com/questions/3126456/can-an-embedded-swank-clojure-repl-access-the-program-it-is-embedded-in
