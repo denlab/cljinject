@@ -3,9 +3,14 @@ package cljinject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
- 
+import clojure.lang.Compiler; 
+import java.io.StringReader; 
+
 public class SwankServletContextListener implements ServletContextListener{
-    ServletContext context;
+
+    // keep a hand on the context so we can get it from within clojure
+    public static ServletContext context;
+
     public void contextInitialized(ServletContextEvent contextEvent) {
         System.out.println(">>>>>>>>>>>>>>> Context Created");
         context = contextEvent.getServletContext();
@@ -17,10 +22,11 @@ public class SwankServletContextListener implements ServletContextListener{
         new Thread() {
             public void run() {
                 try {
-                    while (true) {
-                        System.out.print(".");
-                        Thread.sleep(100);
-                    }
+                    final String startSwankScript = 
+                        "(ns my-app\n" + 
+                        "  (:use [swank.swank :as swank]))\n" + 
+                        "(swank/start-repl) "; 
+                    Compiler.load(new StringReader(startSwankScript)); 
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
