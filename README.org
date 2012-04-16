@@ -37,7 +37,6 @@ Clojars is where all the Clojure goodies lives.
 
 Add to your =pom.xml=: 
 #+begin_src xml
-    <version>1.0-SNAPSHOT</version>
 
     <repositories>
       <repository>
@@ -46,7 +45,6 @@ Add to your =pom.xml=:
       </repository>
     </repositories>
 
-    <build>
 #+end_src
 
 * Add the swank-clojure dependency
@@ -55,15 +53,13 @@ This will allow to start a swank server from within the Web app.
 
 Add to your =pom.xml=: 
 #+begin_src xml
-        </dependency>
-  
+
         <dependency>
           <groupId>swank-clojure</groupId>
           <artifactId>swank-clojure</artifactId>
           <version>1.4.2</version>
         </dependency>
 
-     </dependencies>
 #+end_src
 
 * Create the ServletContextListener that will launch Swank
@@ -118,8 +114,6 @@ public class SwankServletContextListener implements ServletContextListener{
 
 In =web.xml=:
 #+begin_src xml
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
 
     <listener>
       <listener-class>
@@ -127,7 +121,6 @@ In =web.xml=:
       </listener-class>
     </listener>
 
- </web-app>
 #+end_src
 
 * Launch the webapp
