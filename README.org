@@ -6,7 +6,7 @@ Injecting a Clojure REPL into your Existing Java Web app
 
 - You would like to tinker with it using Clojure
 
-- And to connect to it from Emacs to mess around the live Web app
+- And to connect to it from Emacs to mess around with the live Web app
 
 Let's do that!
 
