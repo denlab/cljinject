@@ -139,9 +139,9 @@ nil
 #+end_src
 
 * Connect from Emacs
-
-*Note*: You may need to install =slime-repl=.
-
+** Setup
+Even if you already have =clojure-mode=, you may need to install =slime-repl=.
+** Connect
 - In emacs: =M-x slime-connect=
 
 - Now in the slime REPL type: 
