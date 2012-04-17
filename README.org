@@ -6,7 +6,7 @@ Injecting a Clojure REPL into your Existing Java Web app
 
 - You would like to tinker with it using Clojure
 
-- And to connect to it from Emacs to mess around the live Web app
+- And to connect to it from Emacs to mess around with the live Web app
 
 Let's do that!
 
@@ -37,16 +37,14 @@ Clojars is where all the Clojure goodies lives.
 
 Add to your =pom.xml=: 
 #+begin_src xml
-    <version>1.0-SNAPSHOT</version>
-    <!-- =====<clojars>===== -->
+
     <repositories>
       <repository>
         <id>clojars.org</id>
         <url>http://clojars.org/repo</url>
       </repository>
     </repositories>
-    <!-- =====</clojars>===== -->
-    <build>
+
 #+end_src
 
 * Add the swank-clojure dependency
@@ -55,15 +53,13 @@ This will allow to start a swank server from within the Web app.
 
 Add to your =pom.xml=: 
 #+begin_src xml
-        </dependency>
-        <!-- =====<swank-clojure>===== -->
+
         <dependency>
           <groupId>swank-clojure</groupId>
           <artifactId>swank-clojure</artifactId>
           <version>1.4.2</version>
         </dependency>
-        <!-- =====</swank-clojure>===== -->
-     </dependencies>
+
 #+end_src
 
 * Create the ServletContextListener that will launch Swank
@@ -73,12 +69,12 @@ Create the class:
 
 #+begin_src java
 package cljinject;
-
+ 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import clojure.lang.Compiler;
-import java.io.StringReader;
+import clojure.lang.Compiler; 
+import java.io.StringReader; 
 
 public class SwankServletContextListener implements ServletContextListener{
 
@@ -86,27 +82,30 @@ public class SwankServletContextListener implements ServletContextListener{
     public static ServletContext context;
 
     public void contextInitialized(ServletContextEvent contextEvent) {
+        System.out.println(">>>>>>>>>>>>>>> Context Created");
         context = contextEvent.getServletContext();
+        // set variable to servlet context
+        context.setAttribute("TEST", "TEST_VALUE");
+        
+        System.out.println(">>>>>>>>>>>>>>> now waiting ... ;)");
 
-        final String startSwankScript =
-        "(ns my-app\n" +
-        "  (:use [swank.swank :as swank]))\n" +
-        "(swank/start-repl) ";
-
-        // launch swank in a separate thread otherwise it will 
-        // block the webapp startup
         new Thread() {
             public void run() {
                 try {
-                    Compiler.load(new StringReader(startSwankScript));
+                    final String startSwankScript = 
+                        "(ns my-app\n" + 
+                        "  (:use [swank.swank :as swank]))\n" + 
+                        "(swank/start-repl) "; 
+                    Compiler.load(new StringReader(startSwankScript)); 
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
         }.start();
     }
-
     public void contextDestroyed(ServletContextEvent contextEvent) {
+        context = contextEvent.getServletContext();
+        System.out.println(">>>>>>>>>>>>>>>> Context Destroyed");
     }
 }
 #+end_src
@@ -115,30 +114,34 @@ public class SwankServletContextListener implements ServletContextListener{
 
 In =web.xml=:
 #+begin_src xml
-        <url-pattern>/cometd/*</url-pattern>
-    </filter-mapping>
-    <!-- =====<swank-listener>===== -->
+
     <listener>
       <listener-class>
         cljinject.SwankServletContextListener
       </listener-class>
     </listener>
-    <!-- =====<swank-listener>===== -->
- </web-app>
+
 #+end_src
 
 * Launch the webapp
 
 Now in the Jetty logs you should see: 
 #+begin_src sh
+2012-04-15 22:05:23.845:INFO::No Transaction manager found - if your webapp requires one, please configure one.
+>>>>>>>>>>>>>>> Context Created
+>>>>>>>>>>>>>>> now waiting ... ;)
+2012-04-15 22:05:25.016:INFO::Started SelectChannelConnector@0.0.0.0:8080
+[INFO] Started Jetty Server
+[INFO] Starting scanner at interval of 10 seconds.
 my-app=> Connection opened on null port 4005.
 nil
+
 #+end_src
 
 * Connect from Emacs
-
-*Note*: You may need to install =slime-rep=.
-
+** Setup
+Even if you already have =clojure-mode=, you may need to install =slime-repl=.
+** Connect
 - In emacs: =M-x slime-connect=
 
 - Now in the slime REPL type: 
